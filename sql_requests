@@ -1,0 +1,87 @@
+CREATE DATABASE lessons;
+
+USE lessons;
+
+CREATE TABLE `teachers` (
+  `id_teacher` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name_teacher` VARCHAR(45) NULL,
+  PRIMARY KEY (`id_teacher`),
+  UNIQUE INDEX `id_teacher_UNIQUE` (`id_teacher` ASC) VISIBLE);
+
+CREATE TABLE `st_groups` (
+  `id_group` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name_group` VARCHAR(25) NULL,
+  PRIMARY KEY (`id_group`),
+  UNIQUE INDEX `id_group_UNIQUE` (`id_group` ASC) VISIBLE);
+  
+CREATE TABLE `subjects` (
+       `id_subject` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+       `name_subject` VARCHAR(25) NULL,
+       PRIMARY KEY (`id_subject`),
+       UNIQUE INDEX `id_subject_UNIQUE` (`id_subject` ASC) VISIBLE);
+    
+CREATE TABLE `specializations` (
+  `teacher_id` int unsigned NOT NULL,
+  `subject_id` int unsigned NOT NULL,
+  PRIMARY KEY (`teacher_id`,`subject_id`),
+  KEY `fk_subject_id_idx` (`subject_id`),
+  CONSTRAINT `fk_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id_subject`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_teacher_id` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id_teacher`) ON DELETE CASCADE ON UPDATE CASCADE
+) ; 
+
+CREATE TABLE `classes` (
+  `teacher_id` INT UNSIGNED NOT NULL,
+  `group_id` INT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`teacher_id`, `group_id`, `subject_id`),
+  INDEX `fk_class_group_idx` (`group_id` ASC) VISIBLE,
+  INDEX `fk_class_subject_idx` (`subject_id` ASC) VISIBLE,
+  CONSTRAINT `fk_class_teacher`
+    FOREIGN KEY (`teacher_id`)
+    REFERENCES `teachers` (`id_teacher`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_class_group`
+    FOREIGN KEY (`group_id`)
+    REFERENCES `st_groups` (`id_group`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_class_subject`
+    FOREIGN KEY (`subject_id`)
+    REFERENCES `subjects` (`id_subject`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+    
+CREATE TABLE `unique_classes` (
+  `group_id` INT UNSIGNED NOT NULL,
+  `subject_id` INT UNSIGNED NOT NULL,
+  `teacher_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`group_id`, `subject_id`),
+  INDEX `fk_unique_class_subject_idx` (`subject_id` ASC) VISIBLE,
+  INDEX `fk_unique_class_teacher_idx` (`teacher_id` ASC) VISIBLE,
+  CONSTRAINT `fk_unique_class_group`
+    FOREIGN KEY (`group_id`)
+    REFERENCES `st_groups` (`id_group`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_unique_class_subject`
+    FOREIGN KEY (`subject_id`)
+    REFERENCES `subjects` (`id_subject`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_unique_class_teacher`
+    FOREIGN KEY (`teacher_id`)
+    REFERENCES `teachers` (`id_teacher`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+    
+SELECT 
+	g.name_group, 
+	s.name_subject, 
+	COUNT(cl.teacher_id) count_teachers
+FROM classes cl 
+	JOIN st_groups g ON cl.group_id = g.id_group
+	JOIN subjects s ON cl.subject_id = s.id_subject
+	JOIN teachers t ON cl.teacher_id = t.id_teacher
+GROUP BY cl.group_id, cl.subject_id
+HAVING count_teachers > 1;
